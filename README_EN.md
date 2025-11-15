@@ -40,12 +40,12 @@ We hope you enjoy it!
 | DeepSeek                                         | ✅     | https://chat.deepseek.com/        |
 | Kimi (Moonshot)                                  | ✅     | https://kimi.moonshot.cn/         |
 | Doubao                                           | ✅     | https://www.doubao.com/chat/      |
-| Tongyi Qianwen                                   | ✅     | https://www.tongyi.com/           |
+| Tongyi Qwen                                      | ✅     | https://www.tongyi.com/           |
 | Tencent Yuanbao                                  | ✅     | https://yuanbao.tencent.com/chat  |
 | Zhipu AI                                         | ✅     | https://chatglm.cn/               |
 | Baichuan AI                                      | ✅     | https://ying.baichuan-ai.com/chat |
 | Stepfun                                          | ✅     | https://stepfun.com               |
-| Hailuo AI                                        | ✅     | https://chat.minimaxi.com/        |
+| Minimax                                          | ✅     | https://chat.minimaxi.com/        |
 | Gemini                                           | ✅     | https://gemini.google.com/app     |
 | Grok                                             | ✅     | https://grok.com                  |
 | ChatGPT                                          | ✅     | https://chatgpt.com/              |
