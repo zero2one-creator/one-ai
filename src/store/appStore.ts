@@ -573,6 +573,59 @@ export const useAppStore = defineStore("app", {
       );
     },
 
+    /**
+     * 为所有已打开的 AI 应用创建新会话
+     * 
+     * 遍历所有面板，向每个已打开的 AI 应用发送新建会话请求
+     * 跳过标记为 noSearch 的普通网站应用
+     * 
+     * @returns 返回成功创建新会话的应用数量
+     */
+    async createNewSessionForAll(): Promise<number> {
+      const panesWithTabs = this.getAllPanesWithTabs();
+
+      if (panesWithTabs.length === 0) {
+        return 0;
+      }
+
+      let createdCount = 0;
+
+      // 为每个面板发送新建会话请求
+      const promises = panesWithTabs.map((pane) => {
+        const tab = this.tabs.find((t) => t.id === pane.tabId);
+        if (!tab) {
+          return Promise.resolve();
+        }
+
+        // 跳过普通网站（noSearch 标记的应用）
+        if (tab.app.noSearch) {
+          return Promise.resolve();
+        }
+
+        createdCount++;
+        return this.sendNewSessionToPane(pane.id);
+      });
+
+      await Promise.allSettled(promises);
+      return createdCount;
+    },
+
+    /**
+     * 向指定面板发送新建会话请求
+     * 
+     * 通过全局自定义事件通知对应的 AppView 组件执行新建会话操作
+     * AppView 组件会监听此事件，并在匹配 paneId 时注入 JavaScript 脚本
+     * 
+     * @param paneId 目标面板的 ID
+     */
+    async sendNewSessionToPane(paneId: string): Promise<void> {
+      window.dispatchEvent(
+        new CustomEvent("new-session-pane", {
+          detail: { paneId },
+        })
+      );
+    },
+
     // 搜索所有应用
     async searchAllApps(searchText: string): Promise<void> {
       console.log("🔍 [appStore] searchAllApps 被调用，搜索内容:", searchText);

@@ -22,10 +22,19 @@
     <!-- 设置 / 右侧工具栏 -->
     <div class="toolbar-spacer"></div>
     <div class="layout-controls">
+      <!-- 新建会话按钮 -->
+      <button
+        class="icon-button"
+        @click="onCreateNewSession"
+        v-tooltip="{ content: '新建会话', placement: 'bottom' }"
+      >
+        <n-icon :component="Add" size="16" />
+      </button>
       <!-- 常用网站下拉菜单 -->
       <div class="icon-button">
         <BrowserDropdown />
       </div>
+      <!-- 横向分屏按钮 -->
       <button
         class="icon-button"
         @click="onSplitHorizontal"
@@ -39,7 +48,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { useMessage } from "naive-ui";
+import { useMessage, NIcon } from "naive-ui";
+import { Add } from "@vicons/ionicons5";
 import { HorizontalSplitIcon } from "../../../components/Icon";
 import { useAppStore } from "../../../store/appStore";
 import { AIAppList, logoMap } from "../../../const/defaultConfig";
@@ -72,6 +82,16 @@ const onClickApp = (app: App) => {
   // 1. 有空白面板优先覆盖空白面板
   // 2. 否则覆盖当前激活面板
   appStore.openWebsiteWithSplit(app);
+};
+
+// 新建会话按钮：为所有已打开的 AI 应用创建新会话
+const onCreateNewSession = async () => {
+  const count = await appStore.createNewSessionForAll();
+  if (count === 0) {
+    message.warning("请先打开 AI 应用");
+  } else {
+    message.success(`已为 ${count} 个应用创建新会话`);
+  }
 };
 
 // 右上角横向分屏按钮：在当前一维横向布局末尾新增一个 panel

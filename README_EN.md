@@ -62,7 +62,11 @@ We hope you enjoy it!
 
 ## 📦 Download
 
-> 💡 Please visit the [Releases page](https://github.com/zero2one-creator/one-ai/releases) to download the latest version
+💡 Please visit the [Releases page](https://github.com/zero2one-creator/one-ai/releases) to download the latest version
+
+**Tips**: macOS says "cannot open because the developer cannot be verified"?
+
+**Solution**: Right-click the app → Select "Open" → Click "Open" in the dialog, or execute in terminal: `xattr -cr /Applications/ONEAI.app`
 
 ## 🔧 Development
 

@@ -80,7 +80,7 @@ export const AIAppList = [
   {
     id: "dashscope",
     name: "Tongyi",
-    url: "https://www.tongyi.com/",
+    url: "https://www.qianwen.com/chat",
   },
   {
     id: "minimax",
@@ -258,3 +258,90 @@ export const APP_SEARCH_CONFIGS = [
     },
   ],
 ] as const;
+
+/**
+ * 新建会话按钮选择器配置
+ * 
+ * 支持的选择器类型：
+ * 1. 标准 CSS 选择器：如 'button.class', '#id', '[attr="value"]'
+ * 2. :scope-text("文本")：查找包含指定文本的元素及其可点击父元素
+ * 3. :has(选择器)：手动实现的 :has 伪选择器（用于不支持的浏览器）
+ * 4. :navigate-to("路径")：直接导航到指定路径（用于某些应用）
+ * 
+ * 选择器按优先级排列，找到第一个匹配的即停止
+ */
+export const APP_NEW_SESSION_SELECTORS: Record<string, string[]> = {
+  // DeepSeek - 通过文本查找"新对话"按钮
+  deepseek: [
+    ':scope-text("开启新对话")',
+    ':scope-text("新对话")',
+    ':scope-text("New Chat")',
+  ],
+
+  // 腾讯元宝 - 通过图标类名查找
+  "tencent-yuanbao": [
+    '.icon-yb-ic_newchat_20',
+    'div.yb-common-nav__trigger:has(.icon-yb-ic_newchat_20)',
+  ],
+
+  // Kimi - 通过类名和文本查找
+  moonshot: [
+    '.new-chat-btn',
+    ':scope-text("新建会话")',
+    ':scope-text("新会话")',
+    ':scope-text("New Chat")',
+  ],
+
+  // 豆包 - 通过文本查找
+  doubao: [
+    ':scope-text("新对话")',
+    'div[class*="new-chat-btn"]',
+  ],
+
+  // 通义千问 - 优先使用顶部工具栏按钮（始终可见）
+  dashscope: [
+    '[data-icon-type="pcicon-addDialogue-line"]',
+    'button:has([data-icon-type="pcicon-addDialogue-line"])',
+    'button.new-chat-btn',
+    ':scope-text("新对话")',
+  ],
+
+  // Minimax（海螺） - 新建任务按钮
+  minimax: [
+    'div.new-task-text-div',
+    ':scope-text("新建任务")',
+  ],
+
+  // 智谱 - 通过文本查找
+  zhipu: [
+    ':scope-text("新建对话")',
+    ':scope-text("新建")',
+  ],
+
+  // 百川 - 左上角第一个按钮
+  baichuan: [
+    'button:first-of-type',
+    ':scope-text("新建对话")',
+  ],
+
+  // Stepfun - 直接导航到新建页面
+  stepfun: [
+    ':navigate-to("/chats/new")',
+  ],
+
+  // OpenAI - 通过 aria-label 和 data-testid 查找
+  openai: [
+    'button[aria-label*="New chat"]',
+    '[data-testid="new-chat-button"]',
+  ],
+
+  // 默认配置 - 通用的查找方式
+  default: [
+    ':scope-text("新建对话")',
+    ':scope-text("新对话")',
+    ':scope-text("New Chat")',
+    ':scope-text("新建")',
+    'button[aria-label*="新建"]',
+    'button[aria-label*="New"]',
+  ],
+};
