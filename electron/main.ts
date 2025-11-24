@@ -1,9 +1,9 @@
 import { app, BrowserWindow, globalShortcut, shell, dialog } from "electron";
-import { autoUpdater } from "electron-updater";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
 app.setName("ONEAI");
 
 // 添加崩溃处理
