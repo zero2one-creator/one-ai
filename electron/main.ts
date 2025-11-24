@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from "electron";
+import { app, BrowserWindow, globalShortcut, shell } from "electron";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -65,6 +65,14 @@ async function createWindow() {
     },
   });
 
+  // 统一处理主窗口中通过 window.open / target=_blank 打开的链接
+  // 在主窗口内禁止新建 Electron 窗口，改为使用系统默认浏览器打开
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    console.log("🔗 [main] window.open 捕获，转到默认浏览器:", url);
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
 
@@ -88,6 +96,26 @@ async function createWindow() {
     win?.webContents.toggleDevTools();
   });
 }
+
+// 处理所有 webContents（包括 <webview>）中新窗口的打开行为
+// 对类型为 "webview" 的内容，同样使用默认浏览器打开外部链接
+app.on("web-contents-created", (_event, contents) => {
+  if (contents.getType() === "webview") {
+    // 拦截 webview 中通过 window.open / target=_blank 打开的新窗口
+    contents.setWindowOpenHandler(({ url }) => {
+      console.log("🔗 [main] webview window.open 捕获，转到默认浏览器:", url);
+      shell.openExternal(url);
+      return { action: "deny" };
+    });
+
+    // 拦截 webview 内部的页面跳转（在当前窗口打开的链接）
+    contents.on("will-navigate", (event, url) => {
+      console.log("🔗 [main] webview will-navigate 捕获，转到默认浏览器:", url);
+      event.preventDefault();
+      shell.openExternal(url);
+    });
+  }
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
