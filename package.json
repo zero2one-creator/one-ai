@@ -1,7 +1,7 @@
 {
   "name": "one-ai",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "cdev": "node scripts/clean-dev.mjs",

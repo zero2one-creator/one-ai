@@ -1,5 +1,4 @@
 import { app, BrowserWindow, globalShortcut, shell, dialog } from "electron";
-import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pkg from 'electron-updater';
@@ -38,23 +37,6 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
 
 let win: BrowserWindow | null;
 
-// 安装 Vue Devtools（仅开发环境）--> 兼容问题，暂不能用
-async function openDevTools() {
-  if (!VITE_DEV_SERVER_URL) return;
-
-  try {
-    console.log("🔧 Installing Vue DevTools...");
-    const name = await installExtension(VUEJS_DEVTOOLS, {
-      loadExtensionOptions: {
-        allowFileAccess: true,
-      },
-    });
-    console.log(`✅ Vue DevTools installed: ${name}`);
-  } catch (err) {
-    console.error("❌ Vue DevTools installation failed:", err);
-  }
-}
-
 async function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
@@ -76,13 +58,6 @@ async function createWindow() {
 
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("main-process-message", new Date().toLocaleString());
-
-    // 在页面加载完成后打开 DevTools（仅开发环境）
-    if (VITE_DEV_SERVER_URL) {
-      // 使用 'right' 模式将 DevTools 停靠在右侧，更方便查看
-      win?.webContents.openDevTools({ mode: "right" });
-      console.log("✅ DevTools opened in right mode");
-    }
   });
 
   if (VITE_DEV_SERVER_URL) {
@@ -132,7 +107,6 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(async () => {
-  await openDevTools();
   console.log("🚀 Application started");
   createWindow();
 
