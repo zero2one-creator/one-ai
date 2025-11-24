@@ -21,6 +21,22 @@
         </div>
         <button
           v-if="tab"
+          class="action-btn nav-btn"
+          @click="handleBack"
+          title="后退"
+        >
+          ←
+        </button>
+        <button
+          v-if="tab"
+          class="action-btn nav-btn"
+          @click="handleForward"
+          title="前进"
+        >
+          →
+        </button>
+        <button
+          v-if="tab"
           class="action-btn refresh-btn"
           @click="handleRefresh"
           title="刷新页面"
@@ -98,6 +114,30 @@ const handleActivatePane = () => {
 
 const handleWebviewActivate = () => {
   appStore.setActivePane(props.paneId);
+};
+
+const handleBack = () => {
+  const webview = webviewRef.value as any;
+  if (
+    webview &&
+    typeof webview.canGoBack === "function" &&
+    typeof webview.goBack === "function" &&
+    webview.canGoBack()
+  ) {
+    webview.goBack();
+  }
+};
+
+const handleForward = () => {
+  const webview = webviewRef.value as any;
+  if (
+    webview &&
+    typeof webview.canGoForward === "function" &&
+    typeof webview.goForward === "function" &&
+    webview.canGoForward()
+  ) {
+    webview.goForward();
+  }
 };
 
 const handleRefresh = () => {
@@ -550,7 +590,8 @@ const executeSearch = async (
  */
 const generateNewSessionScript = (appId: string): string => {
   // 从配置文件中获取选择器（如果没有配置，使用默认值）
-  const selectors = APP_NEW_SESSION_SELECTORS[appId] || APP_NEW_SESSION_SELECTORS.default;
+  const selectors =
+    APP_NEW_SESSION_SELECTORS[appId] || APP_NEW_SESSION_SELECTORS.default;
 
   return `
     (async function() {
@@ -704,7 +745,7 @@ const generateNewSessionScript = (appId: string): string => {
 // 执行新建会话
 /**
  * 执行新建会话操作
- * 
+ *
  * 向 webview 注入 JavaScript 脚本，自动查找并点击"新建会话"按钮
  * 脚本会根据不同的 AI 应用使用不同的选择器策略
  */
@@ -735,7 +776,7 @@ const executeNewSession = async () => {
     // 生成并执行新建会话脚本
     const script = generateNewSessionScript(tab.value.app.id);
     const result = await webview.executeJavaScript(script);
-    
+
     if (result && !result.success) {
       console.error("[AppView] 新建会话失败:", result.message);
     }
@@ -746,7 +787,7 @@ const executeNewSession = async () => {
 
 /**
  * 处理全局新建会话事件
- * 
+ *
  * 当用户点击顶部的"新建会话"按钮时，会触发此事件
  * 每个 AppView 组件会检查事件的 paneId 是否匹配自己，匹配则执行新建会话操作
  */
@@ -851,7 +892,7 @@ onUnmounted(() => {
     }
   }
 
-.app-view-header {
+  .app-view-header {
     height: 32px;
     background-color: #f8f9fa;
     border-bottom: 1px solid #e0e0e0;
@@ -897,29 +938,60 @@ onUnmounted(() => {
         font-weight: 500;
       }
 
-      .refresh-btn {
-        width: 20px;
-        height: 20px;
+      .nav-btn {
+        width: 22px;
+        height: 22px;
         border: none;
-        background: transparent;
-        color: #666666;
+        background-color: #f1f3f4;
+        color: #5f6368;
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        transition: all 0.2s;
+        font-size: 12px;
+        line-height: 1;
+        padding: 0;
         margin-left: 2px;
+        transition: background-color 0.15s ease, color 0.15s ease,
+          transform 0.1s ease;
 
         &:hover {
-          background-color: #e3f2fd;
-          color: #4a90e2;
-          transform: rotate(180deg);
+          background-color: #e0e3e7;
+          color: #202124;
         }
 
         &:active {
-          transform: rotate(180deg) scale(0.95);
+          transform: scale(0.96);
+          background-color: #d2d5da;
+        }
+      }
+
+      .refresh-btn {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: none;
+        background-color: #f1f3f4;
+        color: #5f6368;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        margin-left: 4px;
+        transition: background-color 0.15s ease, color 0.15s ease,
+          transform 0.1s ease;
+
+        &:hover {
+          background-color: #e0e3e7;
+          color: #202124;
+        }
+
+        &:active {
+          transform: scale(0.96);
+          background-color: #d2d5da;
         }
       }
     }
