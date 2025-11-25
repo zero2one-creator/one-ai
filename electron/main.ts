@@ -1,7 +1,7 @@
 import { app, BrowserWindow, globalShortcut, shell, dialog } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import pkg from 'electron-updater';
+import pkg from "electron-updater";
 const { autoUpdater } = pkg;
 app.setName("ONEAI");
 
@@ -78,17 +78,40 @@ async function createWindow() {
 app.on("web-contents-created", (_event, contents) => {
   if (contents.getType() === "webview") {
     // 拦截 webview 中通过 window.open / target=_blank 打开的新窗口
+    // 只有打开新窗口的场景才使用外部浏览器打开
     contents.setWindowOpenHandler(({ url }) => {
       console.log("🔗 [main] webview window.open 捕获，转到默认浏览器:", url);
       shell.openExternal(url);
       return { action: "deny" };
     });
 
-    // 拦截 webview 内部的页面跳转（在当前窗口打开的链接）
+    // 拦截 webview 内部的页面跳转
+    // 只拦截外域链接，同域链接允许正常导航（如新建会话）
     contents.on("will-navigate", (event, url) => {
-      console.log("🔗 [main] webview will-navigate 捕获，转到默认浏览器:", url);
-      event.preventDefault();
-      shell.openExternal(url);
+      try {
+        const currentUrl = contents.getURL();
+        const currentOrigin = currentUrl ? new URL(currentUrl).origin : null;
+        const targetOrigin = new URL(url).origin;
+
+        // 同域导航：允许在 webview 内正常跳转
+        if (currentOrigin && currentOrigin === targetOrigin) {
+          console.log("🔗 [main] webview will-navigate 同域跳转，允许:", url);
+          return;
+        }
+
+        // 外域导航：使用默认浏览器打开
+        console.log(
+          "🔗 [main] webview will-navigate 外域跳转，转到默认浏览器:",
+          url
+        );
+        event.preventDefault();
+        shell.openExternal(url);
+      } catch (error) {
+        // URL 解析失败时，默认用浏览器打开
+        console.error("🔗 [main] URL 解析失败，转到默认浏览器:", url, error);
+        event.preventDefault();
+        shell.openExternal(url);
+      }
     });
   }
 });
