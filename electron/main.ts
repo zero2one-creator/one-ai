@@ -1,9 +1,85 @@
-import { app, BrowserWindow, shell, dialog, session } from "electron";
+import { app, BrowserWindow, shell, dialog, session, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pkg from "electron-updater";
+import Store from "electron-store";
+
 const { autoUpdater } = pkg;
 app.setName("ONEAI");
+
+// ==================== 历史记录存储 ====================
+// 历史记录数据结构
+interface HistoryRecord {
+  id: string;
+  text: string;
+  createdAt: number; // 时间戳
+}
+
+// 初始化 electron-store 用于存储历史记录
+const historyStore = new Store<{ searchHistory: HistoryRecord[] }>({
+  name: "search-history",
+  defaults: {
+    searchHistory: [],
+  },
+});
+
+// 历史记录最大条数
+const MAX_HISTORY_COUNT = 1000;
+
+// IPC 通道：获取历史记录列表
+ipcMain.handle("history:getAll", () => {
+  const history = historyStore.get("searchHistory", []);
+  // 按时间倒序返回
+  return [...history].sort((a, b) => b.createdAt - a.createdAt);
+});
+
+// IPC 通道：添加历史记录
+ipcMain.handle("history:add", (_event, text: string) => {
+  if (!text || !text.trim()) {
+    return { success: false, message: "文本不能为空" };
+  }
+
+  const trimmedText = text.trim();
+  const history = historyStore.get("searchHistory", []);
+
+  // 创建新记录
+  const newRecord: HistoryRecord = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    text: trimmedText,
+    createdAt: Date.now(),
+  };
+
+  // 添加到头部
+  history.unshift(newRecord);
+
+  // FIFO 策略：超过最大条数时删除最老的
+  if (history.length > MAX_HISTORY_COUNT) {
+    history.splice(MAX_HISTORY_COUNT);
+  }
+
+  historyStore.set("searchHistory", history);
+  return { success: true, record: newRecord };
+});
+
+// IPC 通道：删除单条历史记录
+ipcMain.handle("history:delete", (_event, id: string) => {
+  const history = historyStore.get("searchHistory", []);
+  const index = history.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return { success: false, message: "记录不存在" };
+  }
+
+  history.splice(index, 1);
+  historyStore.set("searchHistory", history);
+  return { success: true };
+});
+
+// IPC 通道：清空所有历史记录
+ipcMain.handle("history:clear", () => {
+  historyStore.set("searchHistory", []);
+  return { success: true };
+});
 
 // 添加崩溃处理
 app.on("render-process-gone", (event, webContents, details) => {

@@ -8,6 +8,7 @@ import {
   appMap,
 } from "../const/defaultConfig";
 import { getItem, setItem } from "../utils/localStorage";
+import { addHistory } from "../utils/historyStore";
 
 export interface App {
   id: string;
@@ -625,6 +626,14 @@ export const useAppStore = defineStore("app", {
 
       if (panesWithTabs.length === 0) {
         return;
+      }
+
+      // 添加到历史记录（非空文本才添加）
+      const trimmedText = searchText.trim();
+      if (trimmedText) {
+        addHistory(trimmedText).catch((err) => {
+          console.error("[appStore] 添加历史记录失败:", err);
+        });
       }
 
       // 为每个面板发送搜索请求
