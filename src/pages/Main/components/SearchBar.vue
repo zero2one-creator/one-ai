@@ -42,6 +42,10 @@
       >
         <HorizontalSplitIcon />
       </button>
+      <!-- 设置按钮 -->
+      <div class="icon-button">
+        <SettingsDropdown />
+      </div>
     </div>
   </div>
 </template>
@@ -55,6 +59,7 @@ import { useAppStore } from "../../../store/appStore";
 import { AIAppList, logoMap } from "../../../const/defaultConfig";
 import SearchInput from "./SearchInput.vue";
 import BrowserDropdown from "./BrowserDropdown.vue";
+import SettingsDropdown from "./SettingsDropdown.vue";
 import type { App } from "../../../store/appStore";
 
 const appStore = useAppStore();
@@ -184,8 +189,8 @@ const onSplitHorizontal = () => {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 1000px;
-    max-width: 50%;
+    width: 400px;
+    max-width: 30%;
     flex-shrink: 0;
   }
 
