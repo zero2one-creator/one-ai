@@ -1,26 +1,52 @@
 <template>
   <div class="search-input-container">
-    <div class="search-input-wrapper">
-      <SearchIcon class="search-icon" />
-      <textarea
-        ref="searchInputRef"
-        v-model="searchText"
-        class="search-input"
-        :placeholder="placeholder"
-        @keydown.enter="handleKeyDown"
-        @compositionstart="isComposing = true"
-        @compositionend="isComposing = false"
-        @input="checkMultiline"
-        rows="1"
-      />
-      <button
-        v-if="isMultiline"
-        class="expand-button"
-        @click="openExpandModal"
-        title="展开编辑"
+    <div class="search-input-wrapper-container">
+      <div class="search-input-wrapper">
+        <SearchIcon class="search-icon" />
+        <textarea
+          ref="searchInputRef"
+          v-model="searchText"
+          class="search-input"
+          :placeholder="placeholder"
+          @keydown.enter="handleKeyDown"
+          @keydown.down="handleArrowDown"
+          @keydown.up="handleArrowUp"
+          @keydown.escape="closeSuggestions"
+          @compositionstart="isComposing = true"
+          @compositionend="isComposing = false"
+          @input="handleInput"
+          @focus="handleFocus"
+          @blur="handleBlur"
+          rows="1"
+        />
+        <button
+          v-if="isMultiline"
+          class="expand-button"
+          @click="openExpandModal"
+          title="展开编辑"
+        >
+          ⤢
+        </button>
+      </div>
+
+      <!-- Prompt 提示下拉列表 -->
+      <div
+        v-if="showSuggestions && suggestions.length > 0"
+        class="prompt-suggestions"
+        @mousedown.prevent
       >
-        ⤢
-      </button>
+        <div
+          v-for="(item, index) in suggestions"
+          :key="item.id"
+          class="suggestion-item"
+          :class="{ active: index === selectedIndex }"
+          @click="selectSuggestion(item)"
+          @mouseenter="selectedIndex = index"
+        >
+          <div class="suggestion-title">{{ item.title }}</div>
+          <div class="suggestion-content">{{ item.content }}</div>
+        </div>
+      </div>
     </div>
     <button
       class="search-button"
@@ -51,8 +77,8 @@
           />
           <div class="modal-actions">
             <button class="btn cancel" @click="closeExpandModal">取消</button>
-            <button 
-              class="btn primary" 
+            <button
+              class="btn primary"
               :disabled="!expandText.trim() || isSearching"
               @click="confirmAndSearch"
             >
@@ -69,6 +95,7 @@
 import { ref, nextTick } from "vue";
 import { SearchIcon } from "../../../components/Icon";
 import { useAppStore } from "../../../store/appStore";
+import { searchPrompts } from "../../../utils/promptStore";
 
 interface Props {
   placeholder?: string;
@@ -91,11 +118,101 @@ const showExpandModal = ref(false);
 const expandText = ref("");
 const expandTextareaRef = ref<HTMLTextAreaElement | null>(null);
 
+// Prompt 提示相关
+const showSuggestions = ref(false);
+const suggestions = ref<any[]>([]);
+const selectedIndex = ref(-1);
+const isSelecting = ref(false);
+
 // 检查是否多行
 const checkMultiline = () => {
   if (searchInputRef.value) {
     const lineCount = searchText.value.split("\n").length;
     isMultiline.value = lineCount > 1;
+  }
+};
+
+// 处理输入
+const handleInput = async () => {
+  checkMultiline();
+
+  // 如果正在选择建议，不触发搜索
+  if (isSelecting.value) {
+    isSelecting.value = false;
+    return;
+  }
+
+  // 搜索 prompt 提示
+  const query = searchText.value.trim();
+
+  if (query.length >= 2) {
+    // 至少输入2个字符才搜索
+    try {
+      const results = await searchPrompts(query);
+      suggestions.value = results.slice(0, 5); // 最多显示5个建议
+      showSuggestions.value = suggestions.value.length > 0;
+      selectedIndex.value = -1;
+    } catch (error) {
+      showSuggestions.value = false;
+      suggestions.value = [];
+    }
+  } else {
+    showSuggestions.value = false;
+    suggestions.value = [];
+  }
+};
+
+// 处理焦点
+const handleFocus = () => {
+  if (suggestions.value.length > 0) {
+    showSuggestions.value = true;
+  }
+};
+
+// 处理失焦
+const handleBlur = () => {
+  // 使用 setTimeout 延迟关闭，让点击事件先执行
+  setTimeout(() => {
+    showSuggestions.value = false;
+  }, 200);
+};
+
+// 关闭建议列表
+const closeSuggestions = () => {
+  showSuggestions.value = false;
+  selectedIndex.value = -1;
+};
+
+// 选择建议
+const selectSuggestion = (item: any) => {
+  isSelecting.value = true;
+  searchText.value = item.content;
+  showSuggestions.value = false;
+  selectedIndex.value = -1;
+  checkMultiline();
+
+  // 聚焦输入框
+  nextTick(() => {
+    searchInputRef.value?.focus();
+  });
+};
+
+// 处理向下箭头
+const handleArrowDown = (e: KeyboardEvent) => {
+  if (showSuggestions.value && suggestions.value.length > 0) {
+    e.preventDefault();
+    selectedIndex.value = Math.min(
+      selectedIndex.value + 1,
+      suggestions.value.length - 1
+    );
+  }
+};
+
+// 处理向上箭头
+const handleArrowUp = (e: KeyboardEvent) => {
+  if (showSuggestions.value && suggestions.value.length > 0) {
+    e.preventDefault();
+    selectedIndex.value = Math.max(selectedIndex.value - 1, -1);
   }
 };
 
@@ -121,7 +238,7 @@ const confirmAndSearch = async () => {
     showExpandModal.value = false;
     return;
   }
-  
+
   searchText.value = expandText.value;
   showExpandModal.value = false;
   checkMultiline();
@@ -136,12 +253,19 @@ const confirmAndSearch = async () => {
 const handleKeyDown = (e: KeyboardEvent) => {
   // 避免输入法候选词确认时触发搜索
   if (isComposing.value) return;
-  
+
+  // 如果有选中的建议项，按 Enter 选择它
+  if (showSuggestions.value && selectedIndex.value >= 0) {
+    e.preventDefault();
+    selectSuggestion(suggestions.value[selectedIndex.value]);
+    return;
+  }
+
   // 如果按下 Shift+Enter，允许换行（不做任何处理）
   if (e.shiftKey) {
     return;
   }
-  
+
   // 如果只按 Enter（没有 Shift），触发搜索
   e.preventDefault();
   handleSearch();
@@ -163,6 +287,30 @@ const handleSearch = async () => {
     isSearching.value = false;
   }
 };
+
+// 暴露方法给父组件
+const setSearchText = (text: string) => {
+  // 标记为正在选择，避免触发搜索提示
+  isSelecting.value = true;
+  searchText.value = text;
+  checkMultiline();
+  // 关闭提示
+  showSuggestions.value = false;
+  suggestions.value = [];
+  // 聚焦输入框
+  nextTick(() => {
+    searchInputRef.value?.focus();
+    // 重置选择标记
+    setTimeout(() => {
+      isSelecting.value = false;
+    }, 100);
+  });
+};
+
+// 使用 defineExpose 暴露方法
+defineExpose({
+  setSearchText,
+});
 </script>
 
 <style scoped lang="scss">
@@ -173,8 +321,13 @@ const handleSearch = async () => {
   width: 100%;
 }
 
-.search-input-wrapper {
+.search-input-wrapper-container {
   flex: 1;
+  position: relative;
+  z-index: 100; // 确保下拉框在其他元素之上
+}
+
+.search-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
@@ -182,6 +335,7 @@ const handleSearch = async () => {
   border-radius: 10px;
   border: 0.5px solid transparent;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 
   &:hover {
     background-color: rgba(255, 255, 255, 0.8);
@@ -270,6 +424,70 @@ const handleSearch = async () => {
 
     &:active {
       transform: scale(0.95);
+    }
+  }
+}
+
+// Prompt 提示下拉框样式
+.prompt-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 9999;
+
+  .suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: background-color 0.2s;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover,
+    &.active {
+      background-color: rgba(0, 122, 255, 0.08);
+    }
+
+    .suggestion-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+
+    .suggestion-content {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // 滚动条样式
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.3);
     }
   }
 }

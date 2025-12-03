@@ -16,7 +16,7 @@
     <div class="search-container-divider"></div>
     <!-- 搜索框 -->
     <div class="search-container">
-      <SearchInput />
+      <SearchInput ref="searchInputRef" />
     </div>
 
     <!-- 设置 / 右侧工具栏 -->
@@ -44,7 +44,7 @@
       </button>
       <!-- 设置按钮 -->
       <div class="icon-button">
-        <SettingsDropdown />
+        <SettingsDropdown @select-prompt="handlePromptSelect" />
       </div>
     </div>
   </div>
@@ -65,6 +65,9 @@ import type { App } from "../../../store/appStore";
 const appStore = useAppStore();
 const message = useMessage();
 
+// SearchInput 引用
+const searchInputRef = ref<any>(null);
+
 // 为每个应用注入 logo
 const aiAppList = ref(
   AIAppList.map((app: any) => ({
@@ -72,6 +75,13 @@ const aiAppList = ref(
     logo: logoMap[app.id],
   }))
 );
+
+// 处理 Prompt 预设选择
+const handlePromptSelect = (preset: any) => {
+  if (searchInputRef.value && searchInputRef.value.setSearchText) {
+    searchInputRef.value.setSearchText(preset.content);
+  }
+};
 
 // 当前一维横向布局的 panel 数量
 const paneCount = computed(() => {
@@ -123,6 +133,9 @@ const onSplitHorizontal = () => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   gap: 16px;
+  position: relative;
+  z-index: 50; // 确保搜索栏在其他内容之上
+  overflow: visible; // 允许下拉框溢出
 
   .app-icons-container {
     display: flex;
@@ -192,6 +205,9 @@ const onSplitHorizontal = () => {
     flex: 1;
     min-width: 400px;
     max-width: 800px;
+    position: relative;
+    z-index: 100; // 确保搜索容器及其下拉框在其他元素之上
+    overflow: visible; // 允许下拉框溢出显示
   }
 
   .toolbar-spacer {

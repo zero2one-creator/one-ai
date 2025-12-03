@@ -17,7 +17,7 @@
     <HistoryModal v-model="showHistoryModal" />
 
     <!-- Prompt 预设弹窗 -->
-    <PromptPresetModal v-model="showPromptModal" />
+    <PromptPresetModal v-model="showPromptModal" @select="handlePromptSelect" />
   </div>
 </template>
 
@@ -31,6 +31,11 @@ import {
 } from "@vicons/ionicons5";
 import HistoryModal from "./HistoryModal.vue";
 import PromptPresetModal from "./PromptPresetModal.vue";
+
+// 定义 emit
+const emit = defineEmits<{
+  selectPrompt: [preset: any];
+}>();
 
 // 下拉菜单选项 key
 const HISTORY_KEY = "history";
@@ -67,5 +72,10 @@ const handleSelect = (key: string) => {
   } else if (key === PROMPT_KEY) {
     showPromptModal.value = true;
   }
+};
+
+// 处理 Prompt 预设选择
+const handlePromptSelect = (preset: any) => {
+  emit("selectPrompt", preset);
 };
 </script>
