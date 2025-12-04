@@ -429,6 +429,14 @@ export const useAppStore = defineStore("app", {
         this.splitLayout.children = [newPane];
       } else {
         this.splitLayout.children.push(newPane);
+
+        // 新增面板后，清除所有面板的 size 属性，让它们重新均分
+        // 避免新增面板后宽度分配不均
+        this.splitLayout.children.forEach((pane) => {
+          if (pane.type === "single") {
+            delete pane.size;
+          }
+        });
       }
 
       // 新建的空白面板设为当前激活面板
@@ -461,6 +469,14 @@ export const useAppStore = defineStore("app", {
           tabId: null,
         });
       }
+
+      // 关闭面板后，清除剩余面板的 size 属性，让它们重新均分
+      // 避免使用旧的 size 值导致宽度错乱
+      this.splitLayout.children.forEach((pane) => {
+        if (pane.type === "single") {
+          delete pane.size;
+        }
+      });
 
       // 如果关闭的是当前激活面板，选中第一个 single 面板作为新的激活面板
       if (this.activePaneId === paneId) {
@@ -502,6 +518,14 @@ export const useAppStore = defineStore("app", {
 
       const [moved] = children.splice(fromIndex, 1);
       children.splice(toIndex, 0, moved);
+
+      // 移动面板后，清除所有面板的 size 属性，让它们重新均分
+      // 避免使用旧位置的 size 值导致宽度错乱
+      children.forEach((pane) => {
+        if (pane.type === "single") {
+          delete pane.size;
+        }
+      });
 
       // 拖拽排序后持久化
       this.persistState();
@@ -569,10 +593,10 @@ export const useAppStore = defineStore("app", {
 
     /**
      * 为所有已打开的 AI 应用创建新会话
-     * 
+     *
      * 遍历所有面板，向每个已打开的 AI 应用发送新建会话请求
      * 跳过标记为 noSearch 的普通网站应用
-     * 
+     *
      * @returns 返回成功创建新会话的应用数量
      */
     async createNewSessionForAll(): Promise<number> {
@@ -606,10 +630,10 @@ export const useAppStore = defineStore("app", {
 
     /**
      * 向指定面板发送新建会话请求
-     * 
+     *
      * 通过全局自定义事件通知对应的 AppView 组件执行新建会话操作
      * AppView 组件会监听此事件，并在匹配 paneId 时注入 JavaScript 脚本
-     * 
+     *
      * @param paneId 目标面板的 ID
      */
     async sendNewSessionToPane(paneId: string): Promise<void> {

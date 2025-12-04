@@ -3,11 +3,17 @@
     <PanelGroup
       direction="horizontal"
       class="panel-group"
+      :key="panelGroupKey"
       :layout="layout"
       @layout="handleLayout"
     >
       <template v-for="(pane, index) in panes" :key="pane.id">
-        <Panel :defaultSize="100 / panes.length" :minSize="18" class="panel">
+        <Panel
+          :id="pane.id"
+          :defaultSize="100 / panes.length"
+          :minSize="18"
+          class="panel"
+        >
           <AppView
             :tabId="pane.tabId || null"
             :paneId="pane.id"
@@ -38,6 +44,11 @@ const props = defineProps<Props>();
 const appStore = useAppStore();
 
 const panes = computed(() => props.panes || []);
+
+// 生成唯一的 key，当面板顺序改变时强制重新渲染 PanelGroup
+const panelGroupKey = computed(() => {
+  return panes.value.map((p) => p.id).join("-");
+});
 
 // 计算当前布局（使用已保存的 size，否则均分）
 const layout = computed(() => {
