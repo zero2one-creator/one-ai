@@ -64,7 +64,7 @@ const renderLabelWithTooltip = (label: string, tooltip: string) => () =>
         trigger: () =>
           h(
             NIcon,
-            { size: 14, style: "color: #999; cursor: help;" },
+            { size: 14, style: "color: #999;" },
             { default: () => h(HelpCircleOutline) }
           ),
       }
@@ -79,7 +79,10 @@ const options = [
     icon: renderIcon(TimeOutline),
   },
   {
-    label: renderLabelWithTooltip("One Command", "预定义 prompt，使用 / 快速填充"),
+    label: renderLabelWithTooltip(
+      "One Command",
+      "预定义 prompt，使用 / 快速填充"
+    ),
     key: PROMPT_KEY,
     icon: renderIcon(DocumentTextOutline),
   },

@@ -18,7 +18,7 @@
           <template #trigger>
             <n-icon
               :size="16"
-              style="margin-left: 8px; color: #999; cursor: help"
+              style="margin-left: 8px; color: #999"
               :component="HelpCircleOutline"
             />
           </template>
