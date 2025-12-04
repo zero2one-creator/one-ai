@@ -79,7 +79,7 @@ const options = [
     icon: renderIcon(TimeOutline),
   },
   {
-    label: renderLabelWithTooltip("One Command", "编辑 prompt 模板"),
+    label: renderLabelWithTooltip("One Command", "预定义 prompt，使用 / 快速填充"),
     key: PROMPT_KEY,
     icon: renderIcon(DocumentTextOutline),
   },

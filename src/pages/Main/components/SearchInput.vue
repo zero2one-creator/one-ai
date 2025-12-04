@@ -33,8 +33,15 @@
       <div
         v-if="showSuggestions && suggestions.length > 0"
         class="prompt-suggestions"
+        :class="{ 'command-mode': isCommandMode }"
         @mousedown.prevent
       >
+        <!-- 命令模式标题 -->
+        <div v-if="isCommandMode" class="suggestions-header">
+          <span class="header-icon">/</span>
+          <span class="header-title">One Command</span>
+          <span class="header-hint">选择命令填充到搜索框</span>
+        </div>
         <div
           v-for="(item, index) in suggestions"
           :key="item.id"
@@ -43,8 +50,15 @@
           @click="selectSuggestion(item)"
           @mouseenter="selectedIndex = index"
         >
-          <div class="suggestion-title">{{ item.title }}</div>
+          <div class="suggestion-title">
+            <span v-if="isCommandMode" class="command-prefix">/</span>
+            {{ item.title }}
+          </div>
           <div class="suggestion-content">{{ item.content }}</div>
+          <!-- 命令模式显示标签 -->
+          <div v-if="isCommandMode && item.tags && item.tags.length > 0" class="suggestion-tags">
+            <span v-for="tag in item.tags.slice(0, 2)" :key="tag" class="tag">{{ tag }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -92,10 +106,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from "vue";
+import { ref, nextTick, computed } from "vue";
 import { SearchIcon } from "../../../components/Icon";
 import { useAppStore } from "../../../store/appStore";
-import { searchPrompts } from "../../../utils/promptStore";
+import { searchPrompts, getPromptList } from "../../../utils/promptStore";
 
 interface Props {
   placeholder?: string;
@@ -124,6 +138,15 @@ const suggestions = ref<any[]>([]);
 const selectedIndex = ref(-1);
 const isSelecting = ref(false);
 
+// 斜杠命令模式相关
+const isCommandMode = computed(() => searchText.value.startsWith("/"));
+const commandQuery = computed(() => {
+  if (isCommandMode.value) {
+    return searchText.value.slice(1); // 去掉前缀 /
+  }
+  return "";
+});
+
 // 检查是否多行
 const checkMultiline = () => {
   if (searchInputRef.value) {
@@ -142,7 +165,31 @@ const handleInput = async () => {
     return;
   }
 
-  // 搜索 prompt 提示
+  // 斜杠命令模式：搜索 One Command
+  if (isCommandMode.value) {
+    try {
+      const query = commandQuery.value.trim();
+      let results: any[];
+
+      if (query.length === 0) {
+        // 只输入了 /，显示所有 commands
+        results = await getPromptList();
+      } else {
+        // 输入了 /xxx，搜索匹配的 commands
+        results = await searchPrompts(query);
+      }
+
+      suggestions.value = results.slice(0, 8); // 命令模式最多显示8个
+      showSuggestions.value = suggestions.value.length > 0;
+      selectedIndex.value = suggestions.value.length > 0 ? 0 : -1; // 默认选中第一个
+    } catch (error) {
+      showSuggestions.value = false;
+      suggestions.value = [];
+    }
+    return;
+  }
+
+  // 普通模式：搜索 prompt 提示
   const query = searchText.value.trim();
 
   if (query.length >= 2) {
@@ -186,14 +233,22 @@ const closeSuggestions = () => {
 // 选择建议
 const selectSuggestion = (item: any) => {
   isSelecting.value = true;
+
+  // 无论是命令模式还是普通模式，都用 content 替换
   searchText.value = item.content;
+
   showSuggestions.value = false;
   selectedIndex.value = -1;
   checkMultiline();
 
-  // 聚焦输入框
+  // 聚焦输入框并将光标移到末尾
   nextTick(() => {
     searchInputRef.value?.focus();
+    // 将光标移到文本末尾
+    if (searchInputRef.value) {
+      const len = searchText.value.length;
+      searchInputRef.value.setSelectionRange(len, len);
+    }
   });
 };
 
@@ -442,6 +497,51 @@ defineExpose({
   overflow-y: auto;
   z-index: 9999;
 
+  // 命令模式样式
+  &.command-mode {
+    max-height: 400px;
+    border-color: rgba(0, 122, 255, 0.2);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.15);
+  }
+
+  // 命令模式标题栏
+  .suggestions-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(0, 122, 255, 0.08) 0%, rgba(0, 122, 255, 0.04) 100%);
+    border-bottom: 1px solid rgba(0, 122, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 122, 255, 0.15);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #007aff;
+    }
+
+    .header-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #007aff;
+    }
+
+    .header-hint {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-left: auto;
+    }
+  }
+
   .suggestion-item {
     padding: 12px 16px;
     cursor: pointer;
@@ -462,6 +562,14 @@ defineExpose({
       font-weight: 500;
       color: #1f2937;
       margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .command-prefix {
+        color: #007aff;
+        font-weight: 600;
+      }
     }
 
     .suggestion-content {
@@ -474,6 +582,21 @@ defineExpose({
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    // 命令模式标签
+    .suggestion-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+
+      .tag {
+        font-size: 10px;
+        padding: 2px 6px;
+        background: rgba(0, 122, 255, 0.1);
+        color: #007aff;
+        border-radius: 4px;
+      }
     }
   }
 

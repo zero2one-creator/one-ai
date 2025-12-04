@@ -28,6 +28,8 @@ We hope you enjoy it!
 - 💾 **Session Persistence** - Use independent sessions to maintain login status for each AI application
 - ⚡ **Quick Switching** - Click top icons to quickly open or switch between different AI applications
 - 🧠 **Layout Memory** - Restore previous layout on restart for convenient use
+- 📝 **Search History** - Automatically save search records for quick viewing and reuse of historical questions, all data is stored locally
+- ⚡ **One Command** - Preset common prompt templates, type `/` to quickly search and fill the search box
 
 ## 📸 Preview
 
@@ -35,21 +37,21 @@ We hope you enjoy it!
 
 ## 🎯 Supported AI Applications
 
-| AI Application                                   | Status | Website                           |
-| ------------------------------------------------ | ------ | --------------------------------- |
-| DeepSeek                                         | ✅     | https://chat.deepseek.com/        |
-| Kimi (Moonshot)                                  | ✅     | https://kimi.moonshot.cn/         |
-| Doubao                                           | ✅     | https://www.doubao.com/chat/      |
-| Tongyi Qwen                                      | ✅     | https://www.tongyi.com/           |
-| Tencent Yuanbao                                  | ✅     | https://yuanbao.tencent.com/chat  |
-| Zhipu AI                                         | ✅     | https://chatglm.cn/               |
-| Baichuan AI                                      | ✅     | https://ying.baichuan-ai.com/chat |
-| Stepfun                                          | ✅     | https://stepfun.com               |
-| Minimax                                          | ✅     | https://chat.minimaxi.com/        |
-| Gemini                                           | ✅     | https://gemini.google.com/app     |
-| Grok                                             | ✅     | https://grok.com                  |
-| ChatGPT                                          | ✅     | https://chatgpt.com/              |
-| LmArena (Free access to Claude, Gemini models)   | ✅     | https://lmarena.ai                |
+| AI Application                                    | Status | Website                           |
+| ------------------------------------------------- | ------ | --------------------------------- |
+| DeepSeek                                          | ✅     | https://chat.deepseek.com/        |
+| Kimi (Moonshot)                                   | ✅     | https://kimi.moonshot.cn/         |
+| Doubao                                            | ✅     | https://www.doubao.com/chat/      |
+| Tongyi Qwen                                       | ✅     | https://www.tongyi.com/           |
+| Tencent Yuanbao                                   | ✅     | https://yuanbao.tencent.com/chat  |
+| Zhipu AI                                          | ✅     | https://chatglm.cn/               |
+| Baichuan AI                                       | ✅     | https://ying.baichuan-ai.com/chat |
+| Stepfun                                           | ✅     | https://stepfun.com               |
+| Minimax                                           | ✅     | https://chat.minimaxi.com/        |
+| Gemini                                            | ✅     | https://gemini.google.com/app     |
+| Grok                                              | ✅     | https://grok.com                  |
+| ChatGPT                                           | ✅     | https://chatgpt.com/              |
+| LmArena (Free access to Claude, Gemini models)    | ✅     | https://lmarena.ai                |
 
 ## 🛠️ Tech Stack
 
@@ -125,18 +127,23 @@ one-ai/
 │   ├── pages/                # Page components
 │   │   └── Main/             # Main page
 │   │       ├── components/
-│   │       │   ├── AppView.vue       # AI application view (webview container)
-│   │       │   ├── SearchBar.vue     # Top search bar (app icon list)
-│   │       │   ├── SearchInput.vue   # Search input (multi-line, expandable)
-│   │       │   └── SplitLayout.vue   # Split layout (draggable)
-│   │       └── index.vue             # Main page entry
+│   │       │   ├── AppView.vue           # AI application view (webview container)
+│   │       │   ├── SearchBar.vue         # Top search bar (app icon list)
+│   │       │   ├── SearchInput.vue       # Search input (multi-line, expandable, slash command)
+│   │       │   ├── SplitLayout.vue       # Split layout (draggable)
+│   │       │   ├── HistoryModal.vue      # Search history modal
+│   │       │   ├── PromptPresetModal.vue # One Command modal
+│   │       │   └── SettingsDropdown.vue   # Settings dropdown menu
+│   │       └── index.vue                 # Main page entry
 │   │
 │   ├── store/                # Pinia state management
 │   │   └── appStore.ts       # App state (tab, layout, search management)
 │   │
 │   ├── utils/                # Utility functions
 │   │   ├── index.ts          # Common utilities
-│   │   └── localStorage.ts   # localStorage wrapper
+│   │   ├── localStorage.ts   # localStorage wrapper
+│   │   ├── promptStore.ts    # One Command storage operations
+│   │   └── historyStore.ts   # Search history storage operations
 │   │
 │   ├── App.vue               # Root component
 │   ├── main.ts               # Entry file
@@ -212,10 +219,10 @@ export const APP_SEARCH_CONFIGS = [
     {
       // Input selector, supports multiple selectors (comma-separated), tried sequentially
       inputSelector: "textarea, input[type='text'], div[contenteditable='true']",
-      
+    
       // Submit button selector (required only for click method)
       submitSelector: "button[type='submit'], button.send-button",
-      
+    
       // Submit method:
       // - "enter": Submit via Enter key (recommended, more stable)
       // - "click": Submit via button click
@@ -228,11 +235,13 @@ export const APP_SEARCH_CONFIGS = [
 #### Step 4: Test Configuration
 
 1. **Start development mode**
+
 ```bash
 yarn dev
 ```
 
 2. **Open and test the application**
+
    - Click the top icon to open your AI application
    - Enter a question in the search box
    - Click the search button
@@ -243,10 +252,12 @@ yarn dev
 ### Performance Optimization Tips
 
 1. **Limit concurrent applications**
+
    - Each webview is equivalent to an independent browser process
    - Recommend opening no more than 4-5 applications simultaneously
 
 2. **Regular cache cleaning**
+
    ```bash
    yarn cdev
    ```
@@ -254,6 +265,7 @@ yarn dev
 3. **Close unused split screens**
 
 4. **Use production build**
+
    ```bash
    yarn build
    ```
